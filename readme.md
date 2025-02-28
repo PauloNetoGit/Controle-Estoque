@@ -1,5 +1,9 @@
-<<<<<<< HEAD
-=======
+# Executando o Build
+
+<code>pip install cx_Freeze<code/>
+
+<code>python setup.py build<code/>
+
 # Bibliotecas Utilizadas
 
 Este documento descreve brevemente o que cada biblioteca listada no projeto faz.
@@ -68,4 +72,3 @@ Este documento descreve brevemente o que cada biblioteca listada no projeto faz.
 
 ### 21. **Werkzeug==3.1.3**
    - Conjunto de ferramentas WSGI para construir aplicações web em Python. O Flask, por exemplo, usa o Werkzeug para lidar com o servidor e os pedidos HTTP.
->>>>>>> 0aeec48812b856d9b300d3c4baef67c3c7e11263
