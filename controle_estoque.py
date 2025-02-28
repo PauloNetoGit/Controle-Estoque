@@ -2,7 +2,7 @@ import sqlite3
 import traceback
 from PIL import Image, ImageTk
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import Button, Label, Toplevel, messagebox
 from tkinter import ttk
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -47,8 +47,52 @@ def criar_banco():
     conexao.commit()
     conexao.close()
 
+def fechar_pop_up(popup):
+    overlay.place_forget()  # Remover o overlay quando o pop-up for fechado
+    popup.destroy() # Fechar a janela pop-up
+    
+def mostrar_contato():
+    # Criar a janela pop-up
+    popup = Toplevel(root)
+    popup.title("Contato")  # Título do pop-up
+
+    # Tamanho da janela pop-up
+    largura, altura = 300, 200
+    screen_width = root.winfo_width()
+    screen_height = root.winfo_height()
+
+    # Obter a posição da janela principal para centralizar o pop-up nela
+    x = int(root.winfo_x() + (screen_width / 2) - (largura / 2))
+    y = int(root.winfo_y() + (screen_height / 2) - (altura / 2))
+
+    # Configurar a geometria da janela pop-up
+    popup.geometry(f"{largura}x{altura}+{x}+{y}")
+
+    popup.resizable(False, False)
+    popup.overrideredirect(False)
+    
+    
+    # Tornar o fundo da janela pop-up semi-transparente
+    popup.configure(bg="black")
+    popup.attributes("-alpha", 1)  # Opacidade total para o pop-up
+
+    # Estilizar a janela do pop-up com fundo claro
+    content_frame = tk.Frame(popup, bg="#f0f0f0", padx=20, pady=20)
+    content_frame.pack(fill="both", expand=True)
+
+    # Texto do contato
+    contato_label = Label(content_frame, text="Entre em Contato:\nEmail: exemplo@dominio.com\nTelefone: (00) 1234-5678", 
+                          font=("Arial", 12), bg="#f0f0f0", justify="center")
+    contato_label.pack(pady=20)
+
+    # Botão de fechamento
+    fechar_button = Button(content_frame, text="Fechar", command=popup.destroy, font=("Arial", 10), bg="#ff6347", fg="white")
+    fechar_button.pack(pady=10)
+    
+
 def interface():
-    global root
+    global root, overlay
+    
     root = tk.Tk()
     root.title("Controle de Estoque - Criado por: Paulo Neto")
     # root.geometry("1235x700")  # Ajustado para o tamanho da janela
@@ -78,19 +122,21 @@ def interface():
     subtitulo = tk.Label(root, text="com facilidade e precisão", font=("Helvetica", 12,), fg="#d43a02", anchor="w")
     subtitulo.grid(row=0, column=1, padx=10, pady=(90, 0), sticky="w")
     
-    
-    
     # Carregar a imagem do ícone para o rodapé
-    rodape_icon_path = resource_path("img/sobre.png")  # Caminho da imagem do ícone
-    rodape_icon_pil = Image.open(rodape_icon_path)
-    rodape_icon_pil_resized = rodape_icon_pil.resize((40, 40))  # Redimensionar a imagem do ícone
-    rodape_icon = ImageTk.PhotoImage(rodape_icon_pil_resized)
+    sobre_icon_path = "img/sobre.png"  # Caminho da imagem do ícone
+    sobre_icon_pil = Image.open(sobre_icon_path)
+    sobre_icon_pil_resized = sobre_icon_pil.resize((40, 40))  # Redimensionar a imagem do ícone
+    sobre_icon = ImageTk.PhotoImage(sobre_icon_pil_resized)
 
     # Label para exibir o ícone no rodapé
-    rodape_icon_label = tk.Label(root, image=rodape_icon)
-    rodape_icon_label.image = rodape_icon  # Referência para não ser coletado pelo garbage collector
-    rodape_icon_label.grid(row=0, column=2, padx=10, pady=(50, 10), sticky="e")  # Coloca no rodapé à direita
+    sobre_icon_label = tk.Label(root, image=sobre_icon)
+    sobre_icon_label.image = sobre_icon  # Referência para não ser coletado pelo garbage collector
+    sobre_icon_label.grid(row=0, column=2, padx=10, pady=(50, 10), sticky="e")  # Coloca no rodapé à direita
 
+   
+
+    # Associar o clique do ícone à função que mostra o contato
+    sobre_icon_label.bind("<Button-1>", lambda e: mostrar_contato())
     
     # Botão para excluir todos os dados e reiniciar os IDs
     excluir_button = tk.Button(root, text="Excluir Banco de Dados", bg="#e02835", fg="white", command=lambda: excluir_todos_dados(treeview))
