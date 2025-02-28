@@ -51,11 +51,13 @@ def interface():
     global root
     root = tk.Tk()
     root.title("Controle de Estoque - Criado por: Paulo Neto")
-    root.geometry("1235x700")  # Ajustado para o tamanho da janela
+    # root.geometry("1235x700")  # Ajustado para o tamanho da janela
     root.iconbitmap("img/supermarket.ico")
     
+    root.minsize(800, 600)  # Tamanho mínimo da janela
+    
     # Bloquear o redimensionamento da janela
-    root.resizable(False, False)  # False para largura e altura
+    # root.resizable(False, False)  # False para largura e altura
 
     # Imagem do carrinho de compras no canto superior direito
     imagem_carrinho_pil = Image.open(imagem_carrinho_path)
@@ -75,6 +77,19 @@ def interface():
     
     subtitulo = tk.Label(root, text="com facilidade e precisão", font=("Helvetica", 12,), fg="#d43a02", anchor="w")
     subtitulo.grid(row=0, column=1, padx=10, pady=(90, 0), sticky="w")
+    
+    
+    
+    # Carregar a imagem do ícone para o rodapé
+    rodape_icon_path = resource_path("img/sobre.png")  # Caminho da imagem do ícone
+    rodape_icon_pil = Image.open(rodape_icon_path)
+    rodape_icon_pil_resized = rodape_icon_pil.resize((40, 40))  # Redimensionar a imagem do ícone
+    rodape_icon = ImageTk.PhotoImage(rodape_icon_pil_resized)
+
+    # Label para exibir o ícone no rodapé
+    rodape_icon_label = tk.Label(root, image=rodape_icon)
+    rodape_icon_label.image = rodape_icon  # Referência para não ser coletado pelo garbage collector
+    rodape_icon_label.grid(row=0, column=2, padx=10, pady=(50, 10), sticky="e")  # Coloca no rodapé à direita
 
     
     # Botão para excluir todos os dados e reiniciar os IDs
@@ -84,7 +99,7 @@ def interface():
     # Entradas para dados do produto
     tk.Label(root, text="Nome do Produto").grid(row=1, column=0, padx=10, pady=5, sticky="w")
     nome_entry = tk.Entry(root, width=33)
-    nome_entry.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+    nome_entry.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
 
     tk.Label(root, text="Quantidade").grid(row=3, column=0, padx=10, pady=5, sticky="w")
     quantidade_entry = tk.Entry(root, width=33)
@@ -112,6 +127,7 @@ def interface():
     ordenar_nome_ascendente = True
     ordenar_codigo_barras_ascendente = True
     ordenar_quantidade_ascendente = True
+    
 
     def ordenar_lista(treeview, coluna):
         nonlocal ordenar_id_ascendente, ordenar_nome_ascendente, ordenar_codigo_barras_ascendente, ordenar_quantidade_ascendente
@@ -204,10 +220,6 @@ def interface():
                 else:
                     messagebox.showerror("Erro", "Nenhum produto selecionado para editar.")
 
-                #  editar_produto(id_produto, nome, quantidade, codigo_barras)
-                #  messagebox.showinfo("Sucesso", "Produto editado com sucesso!")
-                #  exibir_lista_produtos(treeview)  # Atualizar a lista de produtos
-        
             except ValueError:
                 messagebox.showerror("Erro", "Por favor, insira um valor válido para a quantidade.")
         except Exception as e:
@@ -239,17 +251,30 @@ def interface():
     # Adicionar o evento de duplo clique na Treeview
     treeview.bind("<Double-1>", carregar_produto)
 
-    # Função para imprimir o produto
+
     def imprimir_produto_btn():
         try:
+            # Obtém o ID do produto
             id_produto = int(id_produto_imprimir_entry.get())
             quantidade_impressao = int(quantidade_impressao_entry.get())
+            
+            # Verifica se a quantidade de impressões é maior que 0
             if quantidade_impressao <= 0:
                 messagebox.showerror("Erro", "A quantidade de impressões deve ser maior que 0.")
-                return
-            gerar_etiqueta(id_produto, quantidade_impressao)
+                return  # Retorna para evitar continuar a execução
+
+            # Verifica se a quantidade de impressões é maior que 999
+            if quantidade_impressao > 999:
+                messagebox.showwarning("Atenção", "A quantidade de impressões está muito alta. \nimprima até 999 Etiquetas.")
+            
+            if quantidade_impressao > 0 and quantidade_impressao <= 999:
+                # Gera a etiqueta com o ID do produto e a quantidade válida
+                gerar_etiqueta(id_produto, quantidade_impressao)
+            
         except ValueError:
             messagebox.showerror("Erro", "Por favor, insira valores válidos para o ID e a quantidade de impressões.")
+
+                
 
     # Entradas para remoção de produto
     tk.Label(root, text="ID do Produto para Remover").grid(row=9, column=0, padx=10, pady=5, sticky="w")
@@ -290,7 +315,7 @@ def interface():
 
 def excluir_todos_dados(treeview):
     # Confirmação antes de excluir todos os dados
-    resposta = messagebox.showwarning("Atenção", "Tem certeza que deseja excluir ""TODOS"" os dados do banco?")
+    resposta = messagebox.askyesno("Atenção", "Tem certeza que deseja excluir ""TODOS"" os dados do banco?")
     
     if resposta:  # Se o usuário confirmar
         try:
@@ -501,7 +526,7 @@ def gerar_etiqueta(id_produto, quantidade_impressao):
 
             # Verifica se o PDF foi gerado corretamente
             if os.path.exists(caminho_pdf):
-                messagebox.showinfo("Sucesso", f"Arquivo PDF com as etiquetas gerado com sucesso! (Arquivo: {caminho_pdf})")
+                messagebox.showinfo("Sucesso", f"Arquivo PDF com as etiquetas gerado com sucesso! \n(Arquivo salvo em: {caminho_pdf})")
             else:
                 messagebox.showerror("Erro", "Erro ao gerar o PDF.")
         
