@@ -1,4 +1,5 @@
 import sqlite3
+import traceback
 from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import messagebox
@@ -7,10 +8,29 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import barcode
 from barcode.writer import ImageWriter
+from pathlib import Path
+import sys
 import os
 
+# Função para obter o caminho correto dependendo do modo (normal ou empacotado)
+def resource_path(relative_path):
+    try:
+        # Para quando empacotado como .exe
+        base_path = sys._MEIPASS
+    except Exception:
+        # Caso não seja executável, usa o diretório do script
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+# Usando a função para definir o caminho das imagens e do banco de dados
+icon_path = resource_path("img/supermarket.ico")
+imagem_carrinho_path = resource_path("img/carrinho.png")
+db_path = resource_path("estoque.db")
+
+
 def criar_banco():
-    conexao = sqlite3.connect('estoque.db')
+    conexao = sqlite3.connect(db_path)
     cursor = conexao.cursor()
 
     # Criando a tabela de produtos
@@ -32,21 +52,30 @@ def interface():
     root = tk.Tk()
     root.title("Controle de Estoque - Criado por: Paulo Neto")
     root.geometry("1235x700")  # Ajustado para o tamanho da janela
+    root.iconbitmap("img/supermarket.ico")
     
     # Bloquear o redimensionamento da janela
     root.resizable(False, False)  # False para largura e altura
 
     # Imagem do carrinho de compras no canto superior direito
-    imagem_carrinho_pil = Image.open("img/carrinho.png")
+    imagem_carrinho_pil = Image.open(imagem_carrinho_path)
     imagem_carrinho_pil_resized = imagem_carrinho_pil.resize((150, 150))
     imagem_carrinho = ImageTk.PhotoImage(imagem_carrinho_pil_resized)
 
     imagem_label = tk.Label(root, image=imagem_carrinho)
     imagem_label.grid(row=0, column=0, padx=10, pady=10)
     
-    # Título e Subtítulo
-    titulo = tk.Label(root, text="Supermercado ABC", font=("Helvetica", 16, "bold"))
-    titulo.grid(row=0, column=1, padx=10, pady=10, sticky="w")
+   # Título
+    titulo = tk.Label(root, text="EstoqueMax", font=("Helvetica", 20, "bold"), fg="#fc6500")
+    titulo.grid(row=0, column=1, padx=10, pady=(10, 30), sticky="w")
+
+    # Subtítulo
+    subtitulo = tk.Label(root, text="Gerencie seu estoque", font=("Helvetica", 12,), fg="#d43a02", anchor="w")
+    subtitulo.grid(row=0, column=1, padx=10, pady=(50, 0), sticky="w")
+    
+    subtitulo = tk.Label(root, text="com facilidade e precisão", font=("Helvetica", 12,), fg="#d43a02", anchor="w")
+    subtitulo.grid(row=0, column=1, padx=10, pady=(90, 0), sticky="w")
+
     
     # Botão para excluir todos os dados e reiniciar os IDs
     excluir_button = tk.Button(root, text="Excluir Banco de Dados", bg="#e02835", fg="white", command=lambda: excluir_todos_dados(treeview))
@@ -257,10 +286,11 @@ def interface():
     exibir_lista_produtos(treeview)
 
     root.mainloop()
+    
 
 def excluir_todos_dados(treeview):
     # Confirmação antes de excluir todos os dados
-    resposta = messagebox.askyesno("Confirmação", "Você tem certeza que deseja excluir TODOS os dados do banco?")
+    resposta = messagebox.showwarning("Atenção", "Tem certeza que deseja excluir ""TODOS"" os dados do banco?")
     
     if resposta:  # Se o usuário confirmar
         try:
@@ -320,7 +350,6 @@ def remover_produto(id_produto, quantidade_remover):
     produto = cursor.fetchone()
 
     if produto is None:
-        print(f"Produto com ID {id_produto} não encontrado.")  # Depuração
         messagebox.showerror("Erro", "Produto não encontrado!")
         conexao.close()
         return
@@ -337,7 +366,6 @@ def remover_produto(id_produto, quantidade_remover):
         # Se a quantidade for 0, o produto será removido
         if nova_quantidade == 0:
             cursor.execute("DELETE FROM produtos WHERE id = ?", (id_produto,))
-            print(f"Produto com ID {id_produto} foi removido do estoque.")  # Depuração
             
         # Exibe uma mensagem de sucesso
         messagebox.showinfo("Sucesso", "Produto removido com sucesso!")
@@ -395,9 +423,9 @@ def gerar_etiqueta(id_produto, quantidade_impressao):
         nome, codigo_barras, quantidade = produto
 
         # Verifica se as pastas necessárias existem, se não, cria
-        pasta = 'C:/_Etiquetas-controle de estoque'
-        pasta_imagens = f'{pasta}/etiquetas_png'
-        pasta_pdfs = f'{pasta}/etiquetas_pdf'
+        pasta = os.path.join(os.path.expanduser('~'), 'Documents','Etiquetas-controle-de-estoque')
+        pasta_imagens = os.path.join(pasta, 'etiquetas_png')
+        pasta_pdfs = os.path.join(pasta, 'etiquetas_pdf')
 
         # Garantir que as pastas 'etiquetas_png' e 'etiquetas_pdf' existam
         if not os.path.exists(pasta_imagens):
@@ -411,7 +439,7 @@ def gerar_etiqueta(id_produto, quantidade_impressao):
         barcode_instance = barcode_code(codigo_barras, writer=ImageWriter())
 
         # Caminho para salvar o código de barras como imagem PNG, removendo o ".png" extra
-        caminho_imagem = f'{pasta_imagens}/codigo_de_barras_id-{id_produto}'
+        caminho_imagem = os.path.join(pasta_imagens,f'codigo_de_barras_id-{id_produto}')
 
         try:
             barcode_instance.save(caminho_imagem)
@@ -422,12 +450,12 @@ def gerar_etiqueta(id_produto, quantidade_impressao):
                 return
           
         except Exception as e:
-            print(f"Erro ao salvar o código de barras: {e}")
-            messagebox.showerror("Erro", f"Erro ao salvar o código de barras: {e}")
+            stack_error = traceback.format_exc()
+            messagebox.showerror("Erro", f"Erro ao salvar o código de barras: {caminho_imagem}, {stack_error}")
             return
 
         # Gerar o PDF com todas as etiquetas em um único arquivo
-        caminho_pdf = f'{pasta_pdfs}/etiquetas_id-{id_produto}.pdf'
+        caminho_pdf = os.path.join( pasta_pdfs, f'etiquetas_id-{id_produto}.pdf')
         
         try:
             c = canvas.Canvas(caminho_pdf, pagesize=letter)
@@ -480,6 +508,6 @@ def gerar_etiqueta(id_produto, quantidade_impressao):
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao gerar o PDF: {e}")
 
-
-criar_banco()  # Cria o banco de dados e as tabelas
-interface()  # Inicia a interface gráfica
+if __name__ == "__main__":
+    criar_banco()  # Cria o banco de dados e as tabelas
+    interface()  # Inicia a interface gráfica
