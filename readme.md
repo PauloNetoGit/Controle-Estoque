@@ -1,8 +1,8 @@
 # Executando o Build
 
-<code>pip install cx_Freeze<code/>
+<code>pip install cx_Freeze</code>
 
-<code>python setup.py build<code/>
+<code>python setup.py build</code>
 
 # Bibliotecas Utilizadas
 
