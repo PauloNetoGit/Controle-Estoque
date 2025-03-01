@@ -57,7 +57,7 @@ def mostrar_contato():
     popup.title("Contato")  # Título do pop-up
 
     # Tamanho da janela pop-up
-    largura, altura = 300, 200
+    largura, altura = 330, 200
     screen_width = root.winfo_width()
     screen_height = root.winfo_height()
 
@@ -81,7 +81,7 @@ def mostrar_contato():
     content_frame.pack(fill="both", expand=True)
 
     # Texto do contato
-    contato_label = Label(content_frame, text="Entre em Contato:\nEmail: exemplo@dominio.com\nTelefone: (00) 1234-5678", 
+    contato_label = Label(content_frame, text="Entre em Contato: Paulo Neto\nE-mail: paulonetodeveloper@gmail.com", 
                           font=("Arial", 12), bg="#f0f0f0", justify="center")
     contato_label.pack(pady=20)
 
@@ -320,8 +320,6 @@ def interface():
         except ValueError:
             messagebox.showerror("Erro", "Por favor, insira valores válidos para o ID e a quantidade de impressões.")
 
-                
-
     # Entradas para remoção de produto
     tk.Label(root, text="ID do Produto para Remover").grid(row=9, column=0, padx=10, pady=5, sticky="w")
     id_produto_remover_entry = tk.Entry(root, width=33)
@@ -510,7 +508,7 @@ def gerar_etiqueta(id_produto, quantidade_impressao):
         barcode_instance = barcode_code(codigo_barras, writer=ImageWriter())
 
         # Caminho para salvar o código de barras como imagem PNG, removendo o ".png" extra
-        caminho_imagem = os.path.join(pasta_imagens,f'codigo_de_barras_id-{id_produto}')
+        caminho_imagem = os.path.join(pasta_imagens,f'{nome}__Id={id_produto}')
 
         try:
             barcode_instance.save(caminho_imagem)
@@ -526,7 +524,7 @@ def gerar_etiqueta(id_produto, quantidade_impressao):
             return
 
         # Gerar o PDF com todas as etiquetas em um único arquivo
-        caminho_pdf = os.path.join( pasta_pdfs, f'etiquetas_id-{id_produto}.pdf')
+        caminho_pdf = os.path.join( pasta_pdfs, f'{nome}__Id={id_produto}.pdf')
         
         try:
             c = canvas.Canvas(caminho_pdf, pagesize=letter)
