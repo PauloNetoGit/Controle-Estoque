@@ -482,7 +482,8 @@ def exibir_lista_produtos(treeview, termo_busca=""):
     for item in treeview.get_children():
         treeview.delete(item)
     for produto in produtos:
-        idp, nome, preco, quantidade, cod = produto
+        idp, nome, preco, quantidade, cod = produto # Quantidade é o 4º item (INTEGER do DB)
+        print(f"Tipo da Quantidade no DB: {type(quantidade)}, Valor: {quantidade}")
         try:
             # Formatação de moeda: R$ 0,00
             preco_format = f"R$ {preco:.2f}".replace('.', ',')
@@ -490,6 +491,7 @@ def exibir_lista_produtos(treeview, termo_busca=""):
             preco_format = "R$ 0,00"
         # Destaca itens com estoque zero ou negativo
         tag = 'estoque_baixo' if quantidade <= 0 else ''
+        # Aqui, você insere o valor bruto de 'quantidade' na célula do Treeview
         treeview.insert('', 'end', values=(idp, nome, preco_format, quantidade, cod), tags=(tag,))
         
 def mostrar_contato(root):
@@ -517,7 +519,6 @@ def limpar_campos(nome_entry, preco_entry, quantidade_entry, codigo_barras_entry
     quantidade_impressao_entry.delete(0, tk.END)
     
     # Reseta a quantidade para 0 ou 1, dependendo da função
-    quantidade_entry.insert(0, "0")
     quantidade_remover_entry.insert(0, "1")
     quantidade_impressao_entry.insert(0, "10")
 
@@ -987,23 +988,23 @@ def interface():
         vals = treeview.item(sel[0], "values")
         
         limpar_campos(nome_entry, preco_entry, quantidade_entry, codigo_barras_entry, 
-                      id_produto_remover_entry, quantidade_remover_entry, 
-                      id_produto_imprimir_entry, quantidade_impressao_entry)
+                    id_produto_remover_entry, quantidade_remover_entry, 
+                    id_produto_imprimir_entry, quantidade_impressao_entry)
 
         nome_entry.insert(0, vals[1])
         preco_limpo = vals[2].replace('R$', '').strip().replace(',', '.')
-        preco_entry.insert(0, preco_limpo)
-        quantidade_entry.insert(0, vals[3])
+        preco_entry.insert(0, preco_limpo)    
+        
+        quantidade_entry.insert(0, vals[3]) 
+    
         codigo_barras_entry.insert(0, vals[4])
         
         id_produto_remover_entry.insert(0, vals[0])
         id_produto_imprimir_entry.insert(0, vals[0])
-
+    
     def remover_produto_btn():
         id_str = id_produto_remover_entry.get().strip()
         qt_str = quantidade_remover_entry.get().strip()
-
-        print(f"Lido ID: {id_str}, Lido Quantidade: {qt_str}") 
     
         if not id_str or not qt_str:
             messagebox.showerror("Erro", "ID e Quantidade obrigatórios.")
