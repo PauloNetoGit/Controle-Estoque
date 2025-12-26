@@ -54,7 +54,6 @@ except ImportError:
     print("Atenção: Bibliotecas de PDF/Etiquetas não encontradas. Instale-as (Pillow, python-barcode, qrcode, reportlab).")
     
 # --- Constantes ---
-
 SCAN_INCREMENT = 1 
 
 # --- Funções de Caminho e Inicialização do DB ---
@@ -83,7 +82,7 @@ if os.path.exists(project_db) and not os.path.exists(db_path):
 
 # Paths de Recursos
 icon_path = resource_path("img/supermarket.ico")
-imagem_carrinho_path = resource_path("img/carrinho.png")
+imagem_carrinho_path = resource_path("img/logo.png")
 sobre_icon_path = resource_path("img/sobre.png")
 
 # Tenta registrar a fonte Helvetica para o PDF (necessita do arquivo TTF)
@@ -483,7 +482,7 @@ def exibir_lista_produtos(treeview, termo_busca=""):
         treeview.delete(item)
     for produto in produtos:
         idp, nome, preco, quantidade, cod = produto # Quantidade é o 4º item (INTEGER do DB)
-        print(f"Tipo da Quantidade no DB: {type(quantidade)}, Valor: {quantidade}")
+    
         try:
             # Formatação de moeda: R$ 0,00
             preco_format = f"R$ {preco:.2f}".replace('.', ',')
@@ -561,11 +560,12 @@ def interface():
     if Image and ImageTk:
         header_frame = tk.Frame(root, pady=5, padx=10, bg="#f5f5f5") # Fundo leve para destacar o cabeçalho
         header_frame.pack(side="top", fill="x")
+        header_frame.columnconfigure(2, weight=1)
         
         try:
             # Carrega e redimensiona a imagem do carrinho
             img_pil = Image.open(imagem_carrinho_path)
-            img_resized = img_pil.resize((80, 80), Image.LANCZOS) # Reduzindo para 80x80
+            img_resized = img_pil.resize((130, 130), Image.LANCZOS) # Reduzindo para 90x90
             imagem_carrinho = ImageTk.PhotoImage(img_resized)
             
             imagem_label = tk.Label(header_frame, image=imagem_carrinho, bg="#f5f5f5")
@@ -578,10 +578,13 @@ def interface():
         titulo_sub_frame = tk.Frame(header_frame, bg="#f5f5f5")
         titulo_sub_frame.grid(row=0, column=1, padx=10, sticky="w")
         
-        titulo = tk.Label(titulo_sub_frame, text="D&J - Sabor do sertão", font=("Helvetica", 20, "bold"), fg="#fc6500", bg="#f5f5f5")
+        botao_relatorio_frame = tk.Frame(header_frame, bg="#f5f5f5")
+        botao_relatorio_frame.grid(row=0, column=2, sticky="e", padx=20)
+        
+        titulo = tk.Label(titulo_sub_frame, text="D&J - Sabor do sertão", font=("Helvetica", 24, "bold"), fg="#422717", bg="#f5f5f5")
         titulo.pack(anchor="w")
         
-        subtitulo1 = tk.Label(titulo_sub_frame, text="Controle de Estoque e Venda - Gestão Eficiente", font=("Helvetica", 12), fg="#d43a02", bg="#f5f5f5")
+        subtitulo1 = tk.Label(titulo_sub_frame, text="Controle de Estoque e Venda - Gestão Eficiente", font=("Helvetica", 14), fg="#c7681b", bg="#f5f5f5")
         subtitulo1.pack(anchor="w")
         
     else:
@@ -1275,10 +1278,15 @@ def interface():
     # Botões do Rodapé
     
     # --- NOVO BOTÃO: RELATÓRIO DE ESTOQUE COMPLETO ---
-    btn_relatorio_estoque = tk.Button(footer_frame, text="📄 RELATÓRIO DE ESTOQUE ATUAL (PDF)", 
-                             bg="#04AA6D", fg="white", 
-                             command=gerar_relatorio_estoque) 
-    btn_relatorio_estoque.pack(side="left", padx=5)
+    btn_relatorio_estoque = tk.Button(
+        botao_relatorio_frame,
+        text="📄 ESTOQUE ATUAL",
+        bg="#04AA6D",
+        fg="white",
+        font=("Helvetica", 10, "bold"),
+        command=gerar_relatorio_estoque
+        )
+    btn_relatorio_estoque.pack(anchor="e")
     
     # --- Aba Venda (Caixa Registradora) ---
     aba_venda = ttk.Frame(notebook)

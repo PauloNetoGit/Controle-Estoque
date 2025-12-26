@@ -17,7 +17,7 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ; Idioma do instalador
-AppPublisher=Paulo Neto/Paulo Neto DEV
+AppPublisher=Paulo Neto / EstoqueMax v1.0
 UninstallDisplayIcon={app}\estoqueMax.exe
 SourceDir=C:\Users\Teste\Desktop\ESTOQUE-MAX\estoqueMax
 
