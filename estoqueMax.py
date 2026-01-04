@@ -1,42 +1,45 @@
-import tkinter as tk
-from tkinter import ttk, messagebox, Toplevel, Label
+# ================== IMPORTAÇÕES ==================
 import os
 import sys
+import json
 import shutil
 import sqlite3
-import time
 from pathlib import Path
 from datetime import datetime
+import time
 
-# --- Importações para a GUI (Pillow) ---
 try:
-    from PIL import Image, ImageTk 
+    from escpos.printer import Win32Raw
+except ImportError:
+    Win32Raw = None
+    print("Atenção: python-escpos não instalado ou Win32Raw indisponível.")
+
+
+# --- Importações GUI e PIL ---
+import tkinter as tk
+from tkinter import ttk, messagebox, Toplevel, Label
+try:
+    from PIL import Image, ImageTk
 except ImportError:
     Image = None
     ImageTk = None
-    print("Atenção: A biblioteca Pillow (PIL) não está instalada. O logo e alguns ícones não serão exibidos.")
-    
-# --- Importações condicionais para Geração de PDF/Etiquetas ---
+    print("Atenção: Pillow não está instalado. Algumas imagens podem não aparecer.")
+
+# --- Bibliotecas para PDF, etiquetas e códigos de barras ---
 try:
-    # Bibliotecas para geração de PDF e códigos
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.pdfgen import canvas
-    from reportlab.lib.units import cm, inch
-    from reportlab.lib import colors
+    from reportlab.lib.units import cm
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-    
-    # Bibliotecas para códigos de barras
+    from reportlab.lib import colors
+
     import barcode
     from barcode.writer import ImageWriter
     import qrcode
-
 except ImportError:
-    # Se alguma dessas bibliotecas não estiver instalada, defina as variáveis como None
     canvas = None
     barcode = None
     qrcode = None
@@ -44,25 +47,77 @@ except ImportError:
     TTFont = None
     cm = None
     A4 = None
-    SimpleDocTemplate = None # Adicionado para corrigir a ausência
+    SimpleDocTemplate = None
     Paragraph = None
     Spacer = None
     Table = None
     TableStyle = None
     getSampleStyleSheet = None
     colors = None
-    print("Atenção: Bibliotecas de PDF/Etiquetas não encontradas. Instale-as (Pillow, python-barcode, qrcode, reportlab).")
-    
-# --- Constantes ---
-SCAN_INCREMENT = 1 
+    print("Atenção: Bibliotecas de PDF/Etiquetas não encontradas. Instale: Pillow, python-barcode, qrcode, reportlab.")
+
+# --- Caminho base para recursos ---
+def resource_path(path):
+    """Retorna o caminho absoluto do recurso, compatível com PyInstaller."""
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, path)
+
+# --- Ajustes para PyWin32 no Windows ---
+if sys.platform == 'win32':
+    pywin32_paths = [
+        os.path.join(sys.prefix, 'Lib', 'site-packages', 'pywin32_system32'),
+        os.path.join(sys.prefix, 'Lib', 'site-packages', 'win32')
+    ]
+    for path in pywin32_paths:
+        if os.path.exists(path):
+            os.environ['PATH'] = path + os.pathsep + os.environ['PATH']
+
+# ================== PATHS DE RECURSOS ==================
+# Banco de dados do projeto (embutido)
+project_db = resource_path("estoque.db")
+
+# Banco de dados gravável na pasta Documentos
+def get_writable_db_path():
+    app_folder = Path.home() / "Documents" / "EstoqueMax"
+    app_folder.mkdir(parents=True, exist_ok=True)
+    return str(app_folder / "estoque.db")
+
+db_path = get_writable_db_path()
+
+# Copia DB do projeto para Documentos se for a primeira execução
+if os.path.exists(project_db) and not os.path.exists(db_path):
+    try:
+        shutil.copyfile(project_db, db_path)
+        print("Banco de dados inicial copiado para Documents.")
+    except Exception as e:
+        print(f"Falha ao copiar DB de projeto: {e}")
+
+# Ícones e imagens
+icon_path = resource_path("img/supermarket.ico")
+imagem_carrinho_path = resource_path("img/logo.png")
+sobre_icon_path = resource_path("img/sobre.png")
+
+# Capacidades do ESC/POS
+capabilities_path = resource_path("escpos/capabilities/capabilities.json")
+try:
+    with open(capabilities_path, "r", encoding="utf-8") as f:
+        CAPABILITIES = json.load(f)
+except Exception as e:
+    CAPABILITIES = {}
+    print(f"Falha ao carregar capabilities.json: {e}")
+
+# ================== FONTES ==================
+# Tenta registrar a fonte Helvetica para PDFs
+if pdfmetrics and TTFont:
+    try:
+        pdfmetrics.registerFont(TTFont('Helvetica', resource_path('font/Helvetica.ttf')))
+    except Exception:
+        pass  # Se falhar, usa fonte padrão do ReportLab
+
+# ================== CONSTANTES ==================
+SCAN_INCREMENT = 1  # Incremento de leitura do scanner
 
 # --- Funções de Caminho e Inicialização do DB ---
-
-def resource_path(path):
-    # Função para lidar com o caminho de recursos (útil para executáveis .exe)
-    if hasattr(sys, '_MEIPASS'):  
-        return os.path.join(sys._MEIPASS, path)
-    return os.path.join(os.path.abspath("."), path)
 
 def get_writable_db_path():
     # Define o caminho do banco de dados na pasta Documentos do usuário
@@ -631,8 +686,9 @@ def interface():
             troco_label.config(text="⚠️ Entrada Inválida", fg="#F39C12")
             # Nao exibe messagebox aqui para nao atrapalhar a leitura em tempo real
         except NameError:
-             messagebox.showerror("Erro", "O campo 'Valor Recebido' ou 'Troco' não foi inicializado corretamente.")
-             
+            messagebox.showerror("Erro", "O campo 'Valor Recebido' ou 'Troco' não foi inicializado corretamente.")
+
+    
     def finalizar_venda():
         if not venda_atual:
             messagebox.showwarning("Atenção", "A lista de venda está vazia.")
@@ -652,7 +708,7 @@ def interface():
             return
             
         resposta = messagebox.askyesno("Confirmar Venda", f"Finalizar venda no valor de R$ {total_venda:.2f}?")
-        
+                
         if resposta:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
@@ -689,9 +745,11 @@ def interface():
                 # Prepara o recibo
                 troco = valor_pago - total_venda
                 recibo_itens = "\n".join([f"{i['nome'][:20]:<20} {i['quantidade']:>3} x R$ {i['preco']:.2f} = R$ {i['subtotal']:.2f}" for i in itens_vendidos])
-                
+                imprimir_recibo(itens_vendidos, total_venda, valor_pago)
+
                 recibo = (
                     f"========== VENDA FINALIZADA ==========\n"
+                    f"D&J - Sabor do sertão\n"
                     f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n"
                     f"--------------------------------------\n"
                     f"{recibo_itens}\n"
@@ -718,8 +776,61 @@ def interface():
                 conn.rollback() # Reverte as alterações se houve erro na baixa
                 conn.close()
                 messagebox.showerror("Erro", "Venda abortada devido a erro de estoque/DB. Tente novamente.")
+    
+    import win32print
 
+    try:
+        from escpos.printer import Win32Raw
+    except ImportError:
+        Win32Raw = None
+        messagebox.showerror("Erro", "A biblioteca python-escpos não está instalada ou Win32Raw não disponível.")
+    def imprimir_recibo(itens_vendidos, total_venda, valor_pago):
+        if Win32Raw is None:
+            return  # Sai se Win32Raw não estiver disponível
+        
+        p = None
+        try:
+            troco = valor_pago - total_venda
 
+            # Nome da impressora padrão do Windows
+            printer_name = win32print.GetDefaultPrinter()
+            p = Win32Raw(printer_name)
+
+            # Centraliza texto (ESC a 1)
+            p._raw(b'\x1b\x61\x01')
+
+            # Cabeçalho
+            p.text("========================================\n")
+            p.text("         D&J - SABOR DO SERTAO          \n")
+            p.text(f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+            p.text("----------------------------------------\n")
+
+            # Itens vendidos
+            for i in itens_vendidos:
+                # Formata: Nome (15 carac), Qtd (3 carac), Preço
+                linha = f"{i['nome'][:15]:<15} {i['quantidade']:>2}x {i['preco']:>6.2f}\n"
+                p.text(linha)
+
+            # Totais
+            p.text("----------------------------------------\n")
+            p.text(f"TOTAL:                 R$ {total_venda:>8.2f}\n")
+            p.text(f"VALOR RECEBIDO:        R$ {valor_pago:>8.2f}\n")
+            p.text(f"TROCO:                 R$ {troco:>8.2f}\n")
+            p.text("========================================\n")
+            p.text("       Obrigado pela preferencia!       \n")
+
+            # Avanço de papel e corte
+            p.text("\n\n\n\n")
+            p.cut()
+
+            # Fecha a impressora
+            p.close()
+
+        except Exception as e:
+            if p:
+                p.close()
+            messagebox.showerror("Erro de Impressão", f"Falha ao imprimir conteúdo:\n{e}")
+            
     def atualizar_lista_venda():
         for item in treeview_venda.get_children():
             treeview_venda.delete(item)

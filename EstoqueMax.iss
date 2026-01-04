@@ -5,7 +5,7 @@
 [Setup]
 ; Nome da aplicação que aparecerá no Menu Iniciar e no Painel de Controle
 AppName=Estoque Max
-AppVersion=1.0
+AppVersion=1.7.4
 ; Nome do Executável gerado (o instalador final)
 OutputBaseFilename=Estoque_Max_Setup
 ; Diretório onde o instalador final será salvo, dentro do seu projeto
@@ -17,7 +17,7 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ; Idioma do instalador
-AppPublisher=Paulo Neto / EstoqueMax v1.0
+AppPublisher=Paulo Neto | EstoqueMax v1.7.4
 UninstallDisplayIcon={app}\estoqueMax.exe
 SourceDir=C:\Users\Teste\Desktop\ESTOQUE-MAX\estoqueMax
 
